@@ -1,12 +1,13 @@
 import numpy as np
 
 ## -------------------------- Fixed inputs -----------------------##
+
 import pandas as pd
 
 rnd = np.random
 rnd.seed(0)
 
-s = 50  # specify speed: time = distance/speed, 50 miles per hour
+s = 50  # specify speed: time = distance/speed, 50 kilometer per hour
 
 # Safety factors
 Gamma = 0.01  # safety factor for capacity to determine starting k
@@ -22,7 +23,6 @@ theta = 0.5  # duration equality relaxation over iterations
 
 # Parameters for transformation by Dror et al. (1993)
 inf = 10000
-p = 0.2  # the probability of failure at the last node
 lam = 1000  # arbitrary large number to connect nodes n+1 and n+2 in the routing problem
 
 # beta's for TSP approximations from Franceschetti et al. (2017)
@@ -51,7 +51,7 @@ print(
     '\nAlpha = ', Alpha, 'for capacity in Assignment problem',
     '\nBeta = ', Beta, 'for time in Assignment problem')
 
-Fixed_inputs = pd.DataFrame([Gamma, Delta, Beta, Alpha, s, p],
-                            index=['Gamma', 'Delta', 'Beta', 'Alpha', 's', 'p'])
+Fixed_inputs = pd.DataFrame([Gamma, Delta, Beta, Alpha, s],
+                            index=['Gamma', 'Delta', 'Beta', 'Alpha', 's'])
 
 Fixed_inputs.to_excel('Output/Fixed_inputs.xlsx')
