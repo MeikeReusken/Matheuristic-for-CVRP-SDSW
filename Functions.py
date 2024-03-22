@@ -58,8 +58,6 @@ def Data(track_data_set, a, xc, yc, n, Plot):
         plt.scatter(xc[1:], yc[1:], c='b')
         plt.show()
 
-    # print('Main cost matrix: ', c)
-
     return p_w, N, V, c, b
 
 
@@ -132,7 +130,7 @@ def Seeds(N, c, k, K, xc, yc, n, d, method):
     else:
         def get_angle(point_1, point_2):
             angle = atan2(point_1[1] - point_2[1],
-                          point_1[0] - point_2[0])  # use atan2 instead of atan as the depot is the origin
+                      point_1[0] - point_2[0])  # use atan2 in stead of atan as the depot is the origin
             angle = degrees(angle)
             return angle
 
@@ -140,7 +138,6 @@ def Seeds(N, c, k, K, xc, yc, n, d, method):
         for i in N:
             if angles[i - 1] < 0:
                 angles[i - 1] = 360 + angles[i - 1]
-
         # Three methods for seed selection were tested: 'Fisher', 'Sultana', 'KMeans'
         if method == 'Fisher':
             # proposed by Fisher and Jaikumar (1981)
@@ -159,6 +156,7 @@ def Seeds(N, c, k, K, xc, yc, n, d, method):
                     if (min(angles) + (k - 1) * cone_size) <= angles[i - 1] <= (min(angles) + k * cone_size):
                         cash = cash + [i]
                 cone_allocation = cone_allocation + [cash]
+            # print('Customer cones : ', cone_allocation)
 
         if method == 'Sultana':
             # proposed by Sultana et al. (2017)
@@ -191,8 +189,6 @@ def Seeds(N, c, k, K, xc, yc, n, d, method):
             for i in range(k):
                 cash = cluster[cluster['cluster'] == i].index
                 cone_allocation = cone_allocation + [list(cash)]
-
-        print('Customer cones : ', cone_allocation)
 
     # Pick a seed customer in each cone = SAME FOR ALL METHODS
     new_cone_allocation = [[x + 1 for x in cone_allocation[i]] for i in range(k)]
@@ -242,8 +238,7 @@ def Clustering(track_data_set, Q, N, c, b, k, K, N_s_1, xk, yk,
     A = [(i, k) for i in N for k in K]  # set of arcs between customers and seeds
     matrix_K = [(t, k) for t in K for k in K]  # connections among districts
 
-    # print(N_s_1, K, k)
-
+    
     # seed in each cluster
     seeds = [(N_s_1[i], K[i]) for i in range(k)]
 
@@ -266,7 +261,7 @@ def Clustering(track_data_set, Q, N, c, b, k, K, N_s_1, xk, yk,
                 d_ik[i - 1, k - 1] = np.hypot(xc[i] - xk[k - 1], yc[i] - yk[k - 1])
         d_0i = [np.hypot(xc[0] - xc[i], yc[0] - yc[i]) for i in N]
         d_0k = [np.hypot(xc[0] - xk[k - 1], yc[0] - yk[k - 1]) for k in K]
-
+    
     # calculate insertion cost (see Fisher and Jaikumar (1981))
     C = np.zeros((n, k))
     for i in N:
@@ -282,14 +277,8 @@ def Clustering(track_data_set, Q, N, c, b, k, K, N_s_1, xk, yk,
                 # wrt insertion costs:
                 Furthest[i] = np.argpartition(C[i - 1], math.trunc(par_percentage * k * (-1)))[
                               math.trunc(par_percentage * k * (-1)):] + 1
-            # print(Furthest)
 
-    # Preparations for artificial variable y used for linear reformulation of capacity chance constraint
-    B = [(i, j, k) for i in N for j in N for k in
-         K]  # to reduce number of additional variables y, reduce this matrix to include only j>i
-    B_ij = [(i, j) for i in N for j in N]
-
-    # Probabilistic Generalized Assignment problem #
+     # Probabilistic Generalized Assignment problem #
     # GAP introduces by Fisher and Jaikumar (1981) extended with probabilistic constraints
     mdl = Model('Clustering')
     x = mdl.addVars(A, vtype=GRB.BINARY)
@@ -317,7 +306,7 @@ def Clustering(track_data_set, Q, N, c, b, k, K, N_s_1, xk, yk,
         mdl.addConstrs(Q - quicksum(mu[i - 1] * x[i, k] for i in N) >= 0 for k in K)
         mdl.update()
 
-    # chance constraints on T : convex quadratic formulation
+    # chance constraints on T : convex quadratic formulation    
     mdl.addConstrs(
         st.norm.ppf(1 - Beta) ** 2 * quicksum(sd[i - 1] ** 2 * x[i, k] * b[i - 1] ** 2 for i in N) + 2 * (
                 T - 2 * c[0][N_s_1[k - 1]] / s) * quicksum(
@@ -426,10 +415,16 @@ def Clustering(track_data_set, Q, N, c, b, k, K, N_s_1, xk, yk,
 # --------------------------- Routing ------------------------ #
 
 #  Transformation proposed by Dror et al. (1993), this function is used in Routing()
-def Dror(track_data_set, xc, yc, N, Summary):
+def Dror(track_data_set, xc, yc, mu, sd, Q, N, Summary):
     V = [0] + N  # V includes [0], N excludes [0]
     n = len(N)
-
+    N0 = [i-1 for i in N] # N0 same as N, but starts from 0 instead of 1.
+    
+    if all(v == 0 for v in sd) == True:
+        p = 0
+    if all(v == 0 for v in sd) == False:
+        p = 1 - st.norm.cdf((Q - sum(mu[N0]))/np.sqrt(sum(sd[N0] ** 2)))
+    
     xc = np.append(xc[V], [xc[0], xc[0]])  # copy the coordinates of the depot for node n+1 and n+2
     yc = np.append(yc[V], [yc[0], yc[0]])
 
@@ -471,8 +466,7 @@ def Dror(track_data_set, xc, yc, N, Summary):
     # print('\nCost for DROR route: ', c)
 
     # solve TSP
-    permutation, distance = solve_tsp_dynamic_programming(
-        c)  # =Exact, only possible for `small` districts, for the districts in our paper this was always small enough
+    permutation, distance = solve_tsp_dynamic_programming(c)  # =Exact, only possible for `small` districts, for the districts in our paper this was always small enough
     # if districts are larger, consider heuristics provided by python-tsp, see https://github.com/fillipe-gsm/python-tsp
 
     route = []
@@ -496,6 +490,7 @@ def Dror(track_data_set, xc, yc, N, Summary):
               '\nAdjusted cost = ', distance + lam)
 
     print('\nPermutations = ', permutation)
+    print('Probability of failure at last customer: ', p)
     if permutation.index(n + 2) < permutation.index(n + 1):
         policy = 'risk cost of a return trip'
         print('last customer = ', permutation[n])
@@ -516,32 +511,33 @@ def Dror(track_data_set, xc, yc, N, Summary):
 
 
 def Routing(track_data_set, a, p_w, k, Districts, Districts_0,
-            xc, yc, mu, it, Summary):
+            xc, yc, mu, sd, Q, it, Summary):
     print('\n-----ROUTING-----')
     # Compute route for each district #
 
     Routes, Policies, Costs = [], [], []
     driving, driving_only, recourse = [], [], []
     Duration = pd.DataFrame(columns=['driving', 'handling', 'waiting', 'driving_only', 'recourse'])
+    print('\nApply Dror transformation for each district:')
     for i in range(k):
-        permutations, distance, route, route_ar, policy, cost, driving_time, policy_time, driving_only_time = Dror(
-            track_data_set, xc, yc, Districts[i], Summary='no')
+        permutations, distance, route, route_ar, policy, cost, driving_time, policy_time, driving_only_time = Dror(track_data_set, xc, yc, mu, sd, Q, Districts[i], Summary='no')
         Routes = Routes + [route_ar]
         Policies = Policies + [policy]
         Costs = Costs + [cost]
         driving = driving + [driving_time]
         driving_only = driving_only + [driving_only_time]
         recourse = recourse + [policy_time]
-    Duration['driving'] = driving  # driving includes driving + recourse
+    Duration['driving'] = driving # driving includes driving + recourse
     Duration['driving_only'] = driving_only
     Duration['recourse'] = recourse
 
-    # handling and waiting time are not dependent on the route
+    # handling and waiting time are not dependent on the route, only on the district
     for i in range(k):
+        # adj = [p - 1 for p in Districts[i]]  # Adjust district number to count from 0 to take correct means
         Duration.loc[i, 'handling'] = sum(2 * a * mu[Districts_0[i]])
         Duration.loc[i, 'waiting'] = sum(mu[Districts_0[i]] * a * (
                 0.5 * p_w[Districts_0[i], 0] + 1.5 * p_w[Districts_0[i], 1] + 2.5 * p_w[
-            Districts_0[i], 2]))
+            Districts_0[i], 2])) 
 
     if Summary == 'yes':
         print('Routes per district : ', Routes,
@@ -620,9 +616,23 @@ def Check_Feasibility(T, b, k, Districts_0, Districts, Duration, mu, sd, Eta, Eq
     failure_ec = '' # for equality constraint
 
     # feasibility of chance constraint : using normal
-    Z = [((T - Duration['driving'][i]) - sum(mu[Districts_0[i]] * np.array(b)[Districts_0[i]])) / np.sqrt(sum(
+    if all(v == 0 for v in sd) == False:
+        print('sd>0')
+        Z = [((T - Duration['driving'][i]) - sum(mu[Districts_0[i]] * np.array(b)[Districts_0[i]])) / np.sqrt(sum(
         (np.array(b)[Districts_0[i]] ** 2) * (sd[Districts_0[i]] ** 2))) for i in range(k)]  # derive z-score
-    Chance_T = 1 - st.norm.cdf(Z)  # gives the probability that the total duration exceeds T
+        Chance_T = 1 - st.norm.cdf(Z)  # gives the probability that the total duration exceeds T
+        print(Chance_T)
+        print(type(Chance_T))
+    if all(v == 0 for v in sd) == True:
+        print('deterministic: sd=0')
+        Z = [Duration['driving'][i] + sum(mu[Districts_0[i]] * np.array(b)[Districts_0[i]])for i in range(k)]
+        Chance_T=[]
+        for j in range(k):
+            if Z[j]>T:
+                Chance_T.append((1))
+            else:
+                Chance_T.append((0))
+        Chance_T =np.array(Chance_T)
     print('The probability that the total duration exceeds', T, 'hours is', Chance_T * 100, '%')
 
     cc_failing = []  # set of districts for which the chance constraint is infeasible
