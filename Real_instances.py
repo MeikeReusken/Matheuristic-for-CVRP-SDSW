@@ -25,7 +25,7 @@ df_collection_NL = pd.read_excel('Data/Real-life instances/Historic_collection_a
 print('Minimum collection amount: ', min(df_collection_CAN['collection']), min(df_collection_NL['collection']))
 print('Maximum collection amount: ', max(df_collection_CAN['collection']), max(df_collection_NL['collection']))
 
-sd_list = [0.1, 0.2, 0.3]
+sd_list = [0.0, 0.1, 0.2, 0.3]
 rnd = np.random
 for ie in sd_list:
     plt.rcParams["figure.figsize"] = [6.00, 6.00]
@@ -44,8 +44,7 @@ for ie in sd_list:
                                            'preventive recourse', 'risk recourse'])
 
     Uncertainty_table = pd.DataFrame(index=range(9),
-                                     columns=['|N|', 'gamma-test', 'delta-test', 'alpha-test', 'alpha_av', 'eta-test',
-                                              'eta_av'])
+                                     columns=['|N|', 'gamma-test', 'delta-test', 'alpha-test', 'alpha_av', 'eta-test', 'eta_av'])
 
     for d in [1, 2, 3, 4, 5, 6, 7, 8, 9]:
         if d in [1, 2, 3, 4, 5, 6]:
@@ -53,31 +52,31 @@ for ie in sd_list:
             Q = 4535
             T = 8
             a = 0.0008
-            df = pd.concat([df_raw.loc[df_raw['Instance'] == 0], df_raw.loc[df_raw['Instance'] == d]])
+            df = pd.concat([df_raw.loc[df_raw['Instance'] == 0],
+                           df_raw.loc[df_raw['Instance'] == d]])
             random.seed(d)
-            mu = np.array(random.sample(
-                range(round(min(df_collection_CAN['collection'])), round(max(df_collection_CAN['collection']))),
-                len(df) - 1))
+            mu = np.array(random.sample(range(round(min(df_collection_CAN['collection'])), round(
+                max(df_collection_CAN['collection']))), len(df)-1))
         if d in [7, 8]:
             track_data_set = 'Eemsdelta'
             Q = 1000
             T = 4
             a = 0.008
-            df = pd.concat([df_raw.loc[df_raw['Instance'] == 'a'], df_raw.loc[df_raw['Instance'] == d]])
+            df = pd.concat([df_raw.loc[df_raw['Instance'] == 'a'],
+                           df_raw.loc[df_raw['Instance'] == d]])
             random.seed(d)
-            mu = np.array(random.sample(
-                range(round(min(df_collection_NL['collection'])), round(max(df_collection_NL['collection']))),
-                len(df) - 1))
+            mu = np.array(random.sample(range(round(min(df_collection_NL['collection'])), round(
+                max(df_collection_NL['collection']))), len(df)-1))
         if d in [9]:
             track_data_set = 'Zevenaar'
             Q = 2500
             T = 4
             a = 0.008
-            df = pd.concat([df_raw.loc[df_raw['Instance'] == 'b'], df_raw.loc[df_raw['Instance'] == d]])
+            df = pd.concat([df_raw.loc[df_raw['Instance'] == 'b'],
+                           df_raw.loc[df_raw['Instance'] == d]])
             random.seed(d)
-            mu = np.array(random.sample(
-                range(round(min(df_collection_NL['collection'])), round(max(df_collection_NL['collection']))),
-                len(df) - 1))
+            mu = np.array(random.sample(range(round(min(df_collection_NL['collection'])), round(
+                max(df_collection_NL['collection']))), len(df)-1))
 
         print('\n--- Data set: ', track_data_set)
 
@@ -96,23 +95,20 @@ for ie in sd_list:
 
         output_table = pd.DataFrame()
 
-        Findings, output, C_Duration, Uncertainty_res = Math(n, xc, yc, mu, sd, Q, 'convex', track_data_set, T, a)
-
+        Findings, output, C_Duration, Uncertainty_res = Math(
+            n, xc, yc, mu, sd, Q, 'convex', track_data_set, T, a)
         Real_instances.loc[d - 1] = Findings
         Uncertainty_table.loc[d - 1] = Uncertainty_res
-
-    Real_instances['data set'] = ['Moisson Montreal', 'Moisson Montreal', 'Moisson Montreal', 'Moisson Montreal',
-                                  'Moisson Montreal', 'Moisson Montreal', 'Eemsdelta', 'Eemsdelta', 'Zevenaar']
-    Uncertainty_table['Data set'] = ['Moisson Montreal', 'Moisson Montreal', 'Moisson Montreal', 'Moisson Montreal',
-                                     'Moisson Montreal', 'Moisson Montreal', 'Eemsdelta', 'Eemsdelta', 'Zevenaar']
+    Real_instances['data set'] = ['Moisson Montreal', 'Moisson Montreal', 'Moisson Montreal',
+                                  'Moisson Montreal', 'Moisson Montreal', 'Moisson Montreal', 'Eemsdelta', 'Eemsdelta', 'Zevenaar']
+    Uncertainty_table['Data set'] = ['Moisson Montreal', 'Moisson Montreal', 'Moisson Montreal',
+                                     'Moisson Montreal', 'Moisson Montreal', 'Moisson Montreal', 'Eemsdelta', 'Eemsdelta', 'Zevenaar']
 
     Real_instances = Real_instances[['data set', '|N|', '|K|', 'A1', 'A2', 'A3',
                                      'mindur', 'meandur', 'maxdur',
                                      'solution found', 'assignment gap',
                                      'iterations', 'adjust num districts', 'decrease num districts',
-                                     'time chance constraint', 'driving', 'recourse', 'waiting', 'handling',
-                                     'Duration_total', 'preventive recourse', 'risk recourse', 'time',
-                                     'time clustering', 'time routing']]
+                                     'time chance constraint', 'driving', 'recourse', 'waiting', 'handling', 'Duration_total', 'preventive recourse', 'risk recourse', 'time', 'time clustering', 'time routing']]
 
     Real_instances.to_excel(f'Output/Main-real{ie}.xlsx')
 
