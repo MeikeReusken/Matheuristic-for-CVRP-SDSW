@@ -6,7 +6,7 @@ from main import *
 
 # --- RANDOM INSTANCES --- #
 
-## save figures in one document
+# save figures in one document
 def save_multi_image(filename):
     pp = PdfPages(filename)
     fig_nums = plt.get_fignums()
@@ -17,16 +17,18 @@ def save_multi_image(filename):
 
 
 print('\n\nSOLOMON instances')
-T = 8  # daily time limit in hours 
+T = 8  # daily time limit in hours
 a = 0.008  # service time units per demand unit
 print('Time limit in hours: T= ', T)
 print('Service time units per demand unit: a= ', a)
-sd_list = [0.1, 0.2, 0.3]
+sd_list = [0.0, 0.1, 0.2, 0.3]
 for ie in sd_list:
+    print('\nUNCERTAINTY SCENARIO: ', ie)
     plt.rcParams["figure.figsize"] = [6.00, 6.00]
     plt.rcParams["figure.autolayout"] = True
     # Turn interactive plotting off
     plt.ioff()
+    # loop over c101, c201 and r101
     instance_sets = ['c101', 'c201', 'r101']
     n_options = [20, 30, 40, 50, 60, 70, 80, 90, 100]
     for d in instance_sets:
@@ -45,19 +47,16 @@ for ie in sd_list:
 
         Random_instances = pd.DataFrame(index=range(len(n_options)),
                                         columns=['|N|', '|K|', 'A3', 'assignment objective', 'A2', 'A1',
-                                                 'maxdur', 'mindur', 'meandur', 'time', 'time clustering',
-                                                 'time routing',
+                                                 'maxdur', 'mindur', 'meandur', 'time', 'time clustering', 'time routing',
                                                  'assignment gap', 'iterations', 'solution found',
                                                  'adjust num districts',
                                                  'decrease num districts',
                                                  'time chance constraint',
                                                  'equity constraint', 'b', 'rho', 'End_reason',
-                                                 'driving', 'recourse', 'waiting', 'handling', 'Duration_total',
-                                                 'preventive recourse', 'risk recourse'])
+                                                 'driving', 'recourse', 'waiting', 'handling', 'Duration_total', 'preventive recourse', 'risk recourse'])
 
         Uncertainty_table = pd.DataFrame(index=range(len(n_options)),
-                                         columns=['|N|', 'gamma-test', 'delta-test', 'alpha-test', 'alpha_av',
-                                                  'eta-test', 'eta_av'])
+                                         columns=['|N|', 'gamma-test', 'delta-test', 'alpha-test', 'alpha_av', 'eta-test', 'eta_av'])
 
         output_table = pd.DataFrame()
 
@@ -69,15 +68,14 @@ for ie in sd_list:
             mu = mu_raw[1:(n_options[e] + 1)]
             sd = sd_raw[1:(n_options[e] + 1)]
 
-            Findings, output, C_Duration, Uncertainty_res = Math(n, xc, yc, mu, sd, Q, 'convex', track_data_set, T, a)
+            Findings, output, C_Duration, Uncertainty_res = Math(
+                n, xc, yc, mu, sd, Q, 'convex', track_data_set, T, a)
             Random_instances.loc[e] = Findings
             Uncertainty_table.loc[e] = Uncertainty_res
 
         Random_instances['instance'] = range(1, len(n_options) + 1)
         Random_instances['data set'] = d
-        # print(Random_instances)
         Uncertainty_table['Data set'] = d
-        # print(Uncertainty_table)
 
         if d == 'c101':
             Results_c101 = Random_instances[
@@ -88,8 +86,9 @@ for ie in sd_list:
                  'time chance constraint', 'driving', 'recourse', 'waiting', 'handling', 'Duration_total',
                  'preventive recourse', 'risk recourse', 'time', 'time clustering', 'time routing',
                  'End_reason']]
-            Results_uncertainty_c101 = Uncertainty_table[
-                ['Data set', '|N|', 'gamma-test', 'delta-test', 'alpha-test', 'alpha_av', 'eta-test', 'eta_av']]
+
+            Results_uncertainty_c101 = Uncertainty_table[[
+                'Data set', '|N|', 'gamma-test', 'delta-test', 'alpha-test', 'alpha_av', 'eta-test', 'eta_av']]
 
         if d == 'c201':
             Results_c201 = Random_instances[
@@ -100,8 +99,8 @@ for ie in sd_list:
                  'time chance constraint', 'driving', 'recourse', 'waiting', 'handling', 'Duration_total',
                  'preventive recourse', 'risk recourse', 'time', 'time clustering', 'time routing',
                  'End_reason']]
-            Results_uncertainty_c201 = Uncertainty_table[
-                ['Data set', '|N|', 'gamma-test', 'delta-test', 'alpha-test', 'alpha_av', 'eta-test', 'eta_av']]
+            Results_uncertainty_c201 = Uncertainty_table[[
+                'Data set', '|N|', 'gamma-test', 'delta-test', 'alpha-test', 'alpha_av', 'eta-test', 'eta_av']]
 
         if d == 'r101':
             Results_r101 = Random_instances[
@@ -112,17 +111,17 @@ for ie in sd_list:
                  'time chance constraint', 'driving', 'recourse', 'waiting', 'handling', 'Duration_total',
                  'preventive recourse', 'risk recourse', 'time', 'time clustering', 'time routing',
                  'End_reason']]
-            Results_uncertainty_r101 = Uncertainty_table[
-                ['Data set', '|N|', 'gamma-test', 'delta-test', 'alpha-test', 'alpha_av', 'eta-test', 'eta_av']]
+            Results_uncertainty_r101 = Uncertainty_table[[
+                'Data set', '|N|', 'gamma-test', 'delta-test', 'alpha-test', 'alpha_av', 'eta-test', 'eta_av']]
 
     Results_convex = pd.concat([Results_c101, Results_c201, Results_r101])
     Results_convex.to_excel(f'Output/Main-random{ie}.xlsx')
     # print(Results_convex)
 
-    Results_uncertainty = pd.concat([Results_uncertainty_c101, Results_uncertainty_c201, Results_uncertainty_r101])
+    Results_uncertainty = pd.concat(
+        [Results_uncertainty_c101, Results_uncertainty_c201, Results_uncertainty_r101])
     Results_uncertainty.to_excel(f'Output/Uncertainty-random{ie}.xlsx')
 
-    ## save figures in one document
+    # save figures in one document
     save_multi_image(f"Output/Plots_random{ie}.pdf")
     plt.close('all')
-
