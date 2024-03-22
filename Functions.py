@@ -278,7 +278,7 @@ def Clustering(track_data_set, Q, N, c, b, k, K, N_s_1, xk, yk,
                 Furthest[i] = np.argpartition(C[i - 1], math.trunc(par_percentage * k * (-1)))[
                               math.trunc(par_percentage * k * (-1)):] + 1
 
-     # Probabilistic Generalized Assignment problem #
+    # Probabilistic Generalized Assignment problem #
     # GAP introduces by Fisher and Jaikumar (1981) extended with probabilistic constraints
     mdl = Model('Clustering')
     x = mdl.addVars(A, vtype=GRB.BINARY)
