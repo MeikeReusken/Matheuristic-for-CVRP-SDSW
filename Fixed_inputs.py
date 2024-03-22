@@ -37,7 +37,6 @@ Fran = {20: 0.8584265,
         100: 0.7764689,
         110: 0.7764689 + (0.7563542 - 0.7764689) / 10}  # 0.7563542 is for n = 200
 # interpolation to determine n+1's
-# Fran_inter = {i + 1: Fran[i] + (Fran[i + 10] - Fran[i]) for i in [20, 30, 40, 50, 60, 70, 80, 90, 100]}
 Fran_inter = {i + j: Fran[i] + 1 / 10 * j * (Fran[i + 10] - Fran[i]) for i in [20, 30, 40, 50, 60, 70, 80, 90, 100] for
               j in range(10)}
 
